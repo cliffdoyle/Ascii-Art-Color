@@ -74,15 +74,15 @@ func main() {
 	var substring string
 	var ok bool
 	if *colorFlag != "" {
-		colorParts := strings.SplitN(*colorFlag, " ", 2)
-		if len(colorParts) < 2 {
-			log.Fatal("Usage: go run . --color=<color> <substring> [string] [Font_File]")
-			return
-		}
-		colorName := colorParts[0]
-		substring = strings.Join(colorParts[1:], " ")
+		// colorParts := strings.SplitN(*colorFlag, " ", 2)
+		// if len(colorParts) < 2 {
+		// 	log.Fatal("Usage: go run . --color=<color> <substring> [string] [Font_File]")
+		// 	return
+		// }
+		// colorName := colorParts[0]
+		// substring = strings.Join(colorParts[1:], " ")
 
-		colorCode, ok = colorMap[colorName]
+		colorCode, ok = colorMap[*colorFlag]
 		if !ok {
 			log.Fatal("Invalid color name")
 			return

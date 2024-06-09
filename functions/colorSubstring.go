@@ -10,7 +10,7 @@ func ColorSubstring(concatenatedLines []string, color, substring string) []strin
 	if substring == "" {
 		//Color the whole string
 		for i := range concatenatedLines {
-			concatenatedLines[i] = fmt.Sprintf("\033[%sm%s\033[0m", color, concatenatedLines[i])
+			concatenatedLines[i] = fmt.Sprintf("\033[%sm%s\033[0m", color, concatenatedLines[i]) 
         
 }
 	} else {
