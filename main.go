@@ -23,38 +23,41 @@ var colorMap = map[string]string{
 }
 
 func main() {
-	// Define flags
+	// Define the flags
 	outputFlag := flag.String("output", "", "Specify file type")
 	colorFlag := flag.String("color", "", "Specify color and substring to be colored in the format <color> <substring>")
+
+	// Parse the flags
 	flag.Parse()
 
 	// Get non-flag arguments
 	args := flag.Args()
 	if len(args) < 1 {
-		log.Fatal("Usage: go run . [OPTION] [STRING] [FONT_FILE]")
+		log.Fatal("Usage: go run . [options] [String] [Font_File]")
 		return
 	}
-
-	inputString := args[0] // Corrected index to 0 to get the string to be colored
+	inputString := args[0]
 	var fontFile string
-	if len(args) == 3 { // Adjust for font file argument, if provided
-		fontFile = args[2]
+
+	// Adjust to correctly handle the font file argument
+	if len(args) == 2 && !strings.Contains(args[1], " ") {
+		fontFile = args[1]
 	} else {
 		fontFile = "standard"
 	}
 
-	// Load font data
+	// Load the FontData
 	fontArray, err := functions.Fonts(fontFile)
 	if err != nil {
 		fmt.Println("Error loading font:", err)
 		return
 	}
 
-	// Prepare input string
+	// Prepare the inputString
 	inputString = strings.ReplaceAll(inputString, "\\n", "\n")
 	words := strings.Split(inputString, "\n")
 
-	// Determine output destination
+	// Determine the output destination
 	var output *os.File
 	if *outputFlag != "" {
 		output, err = os.Create(*outputFlag)
@@ -66,59 +69,48 @@ func main() {
 		output = os.Stdout
 	}
 
-	// Extract substring and string to be colored
+	// Extract color and substring
+	var colorCode string
 	var substring string
-	var stringToColor string
+	var ok bool
 	if *colorFlag != "" {
 		colorParts := strings.SplitN(*colorFlag, " ", 2)
-		if len(colorParts) != 2 {
-			log.Fatal("Usage: go run . [OPTION] [STRING]")
+		if len(colorParts) < 2 {
+			log.Fatal("Usage: go run . --color=<color> <substring> [string] [Font_File]")
 			return
 		}
-		substring = colorParts[1] // Corrected index to 1 to get the substring
-		stringToColor = args[0]   // Corrected index to 0 to get the string to be colored
+		colorName := colorParts[0]
+		substring = strings.Join(colorParts[1:], " ")
+
+		colorCode, ok = colorMap[colorName]
+		if !ok {
+			log.Fatal("Invalid color name")
+			return
+		}
 	}
 
+	// Process each word
 	for _, word := range words {
 		concatenatedLines := make([]string, 8)
-		count := 0
 		if word == "" {
-			count++
-			if count < len(words) {
-				fmt.Fprintln(output)
-				continue
-			}
+			fmt.Fprintln(output)
 			continue
 		}
 		// Process each character in the word
 		for _, char := range word {
 			asciiArt, err := functions.PrintChar(char, fontArray)
 			if err != nil {
-				log.Fatal("Error printing ascii", err)
+				log.Fatal("Error printing ascii:", err)
 			}
 			// Concatenate the lines of the Ascii art for the character
 			for i, line := range asciiArt {
 				concatenatedLines[i] += line
 			}
 		}
-
 		// Apply color if specified
 		if *colorFlag != "" {
-			colorParts := strings.SplitN(*colorFlag, " ", 2)
-			if len(colorParts) == 2 {
-				colorName := colorParts[0]
-				colorCode, ok := colorMap[colorName]
-				if !ok {
-					log.Fatal("Invalid color name")
-					return
-				}
-				concatenatedLines = functions.ColorSubstring(concatenatedLines, colorCode, substring, stringToColor)
-			} else {
-				log.Fatal("Usage: go run . [OPTION] [STRING]")
-				return
-			}
+			concatenatedLines = functions.ColorSubstring(concatenatedLines, colorCode, substring)
 		}
-
 		// Print Ascii art lines
 		for _, line := range concatenatedLines {
 			fmt.Fprintln(output, line)
