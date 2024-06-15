@@ -1,23 +1,29 @@
 package functions
 
 import (
-	"strings"
 	"fmt"
+	"log"
 )
 
-// ColorSubstring colors the specified substring within the concatenatedLines using the given colorCode.
-func ColorSubstring(concatenatedLines []string, color, substring string) []string {
-	if substring == "" {
-		//Color the whole string
-		for i := range concatenatedLines {
-			concatenatedLines[i] = fmt.Sprintf("\033[%sm%s\033[0m", color, concatenatedLines[i]) 
-        
-}
-	} else {
-		//color the specified substring
-		for i := range concatenatedLines {
-			concatenatedLines[i] = strings.ReplaceAll(concatenatedLines[i],substring,fmt.Sprintf("\033[%sm%s\033[0m", color, substring))
+// ColorSubstring colors the specified substring within the ASCII art lines.
+func ColorSubstring(sub string, fontdata [95][8]string, color string) []string {
+	concatenatedLines := make([]string, 8)
+
+	for _, char := range sub {
+		asciiArt, err := PrintChar(char, fontdata)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for k, art := range asciiArt {
+
+			if color != "" {
+				concatenatedLines[k] += fmt.Sprintf("\033[%sm%s\033[0m", color, art)
+			} else {
+				concatenatedLines[k] += art
+			}
+
 		}
 	}
+
 	return concatenatedLines
 }

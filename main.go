@@ -1,13 +1,12 @@
 package main
 
 import (
+	"ascii-art-color/functions"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
-
-	"ascii-art/functions"
 )
 
 // Map of color names to ANSI escape codes
@@ -23,98 +22,102 @@ var colorMap = map[string]string{
 }
 
 func main() {
-	// Define the flags
-	outputFlag := flag.String("output", "", "Specify file type")
-	colorFlag := flag.String("color", "", "Specify color and substring to be colored in the format <color> <substring>")
+	if len(os.Args) == 1 || len(os.Args) > 4 {
+		return
+	}
 
-	// Parse the flags
+	color := flag.String("color", "", "Specify color")
 	flag.Parse()
-
-	// Get non-flag arguments
 	args := flag.Args()
-	if len(args) < 1 {
-		log.Fatal("Usage: go run . [options] [String] [Font_File]")
-		return
-	}
-	inputString := args[0]
-	var fontFile string
-
-	// Adjust to correctly handle the font file argument
-	if len(args) == 2 && !strings.Contains(args[1], " ") {
-		fontFile = args[1]
-	} else {
-		fontFile = "standard"
-	}
-
-	// Load the FontData
-	fontArray, err := functions.Fonts(fontFile)
-	if err != nil {
-		fmt.Println("Error loading font:", err)
-		return
-	}
-
-	// Prepare the inputString
-	inputString = strings.ReplaceAll(inputString, "\\n", "\n")
-	words := strings.Split(inputString, "\n")
-
-	// Determine the output destination
-	var output *os.File
-	if *outputFlag != "" {
-		output, err = os.Create(*outputFlag)
-		if err != nil {
-			log.Fatal("Error creating output file:", err)
-		}
-		defer output.Close()
-	} else {
-		output = os.Stdout
-	}
-
-	// Extract color and substring
-	var colorCode string
+	var inputString string
 	var substring string
-	var ok bool
-	if *colorFlag != "" {
-		// colorParts := strings.SplitN(*colorFlag, " ", 2)
-		// if len(colorParts) < 2 {
-		// 	log.Fatal("Usage: go run . --color=<color> <substring> [string] [Font_File]")
-		// 	return
-		// }
-		// colorName := colorParts[0]
-		// substring = strings.Join(colorParts[1:], " ")
+	fontfile := "standard"
 
-		colorCode, ok = colorMap[*colorFlag]
+	switch len(args) {
+	case 1:
+		inputString = args[0]
+	case 2:
+		substring = args[0]
+		inputString = args[1]
+	case 3:
+		substring = args[0]
+		inputString = args[1]
+		fontfile = args[2]
+
+	}
+
+	//Load fontdata
+	fontArray, err := functions.Fonts(fontfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//Process the color flag
+
+	var colorCode string
+	var ok bool
+	if *color != "" {
+		colorCode, ok = colorMap[*color]
 		if !ok {
-			log.Fatal("Invalid color name")
+			fmt.Println("Invalid color")
 			return
 		}
 	}
 
-	// Process each word
-	for _, word := range words {
+	//Process the inputString
+
+	inputString = strings.ReplaceAll(inputString, "\\n", "\n")
+
+	lines := strings.Split(inputString, "\n")
+	count := 0
+	for _, line := range lines {
 		concatenatedLines := make([]string, 8)
-		if word == "" {
-			fmt.Fprintln(output)
+
+		//Handle newline
+		if line == "" {
+			count++
+			if count < len(lines) {
+				fmt.Println()
+				continue
+			}
 			continue
 		}
-		// Process each character in the word
-		for _, char := range word {
-			asciiArt, err := functions.PrintChar(char, fontArray)
-			if err != nil {
-				log.Fatal("Error printing ascii:", err)
+
+		//Determine substring Destination
+		var sublines []string
+		if substring == "" {
+			sublines = []string{line}
+		} else {
+			sublines = strings.Split(line, substring)
+		}
+
+		for i, subline := range sublines {
+
+			for _, char := range subline {
+				asciiArt, err := functions.PrintChar(char, fontArray)
+				if err != nil {
+					log.Fatal(err)
+				}
+				for j, artline := range asciiArt {
+					concatenatedLines[j] += artline
+				}
 			}
-			// Concatenate the lines of the Ascii art for the character
-			for i, line := range asciiArt {
-				concatenatedLines[i] += line
+
+			if substring != "" && i < len(sublines)-1 {
+				coloredSub := functions.ColorSubstring(substring, fontArray, colorCode)
+				for k, artline := range coloredSub {
+					concatenatedLines[k] += artline
+				}
 			}
 		}
-		// Apply color if specified
-		if *colorFlag != "" {
-			concatenatedLines = functions.ColorSubstring(concatenatedLines, colorCode, substring)
+		if substring == "" && colorCode != "" {
+			concatenatedLines = functions.ColorSubstring(line, fontArray, colorCode)
 		}
-		// Print Ascii art lines
-		for _, line := range concatenatedLines {
-			fmt.Fprintln(output, line)
+
+		for _, artlines := range concatenatedLines {
+			fmt.Println(artlines)
 		}
-		fmt.Fprintln(output)
+
 	}
+
 }

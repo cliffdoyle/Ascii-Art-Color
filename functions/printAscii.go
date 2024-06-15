@@ -6,7 +6,7 @@ import "fmt"
 func PrintChar(c rune, fontData [95][8]string) ([]string, error) {
     // Check if the character is within the supported ASCII range
     if c > 126 || c < 32 {
-        return nil, fmt.Errorf("Character out of range: %c", c)
+        return nil, fmt.Errorf("character out of range: %c", c)
     }
 
     // Calculate the index in the font data array

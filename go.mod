@@ -1,3 +1,3 @@
-module ascii-art
+module ascii-art-color
 
 go 1.18
